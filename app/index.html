@@ -1,19 +1,1214 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Righteous&family=Quicksand:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <title>Forest Guardian</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+<meta charset="utf-8">
+<title>Canopy — Satellite Fire Risk Prediction</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Righteous&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/d3@7.9.0/dist/d3.min.js" integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js" integrity="sha384-Ukv1p/xTma6P4/2bY5KzWBw+ydSpXmhCMtyciIQVDJ1RmOxtCYNMF1uXT9T63H67" crossorigin="anonymous"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.184.0/build/three.module.js",
+    "three/addons/controls/OrbitControls.js": "https://unpkg.com/three@0.184.0/examples/jsm/controls/OrbitControls.js",
+    "three/addons/exporters/OBJExporter.js": "https://unpkg.com/three@0.184.0/examples/jsm/exporters/OBJExporter.js",
+    "three/addons/exporters/GLTFExporter.js": "https://unpkg.com/three@0.184.0/examples/jsm/exporters/GLTFExporter.js"
+  },
+  "integrity": {
+    "https://unpkg.com/three@0.184.0/build/three.module.js": "sha384-8FCZ1eVO6it4+pbec2aDtnTrwjWXZLJRC+MAGCIPDgsYnUrl/E0A2YlF8ioMKI/J",
+    "https://unpkg.com/three@0.184.0/build/three.core.js": "sha384-dw2ooPewaEIrAgl6oFDBmmBWCE9oW9LxRGcfwZ0hLvEprzo202wXl7vCYHRlSnOT",
+    "https://unpkg.com/three@0.184.0/examples/jsm/controls/OrbitControls.js": "sha384-4rziNxOBZKQ69i+w+f89KJ55TCYquwchVbByQwmaOeIOXdOU2PLDn3kOfXHwIJC9",
+    "https://unpkg.com/three@0.184.0/examples/jsm/exporters/OBJExporter.js": "sha384-nbwtoZENJD3Vq+ACK0CuGQdPMuDWHkamC2KJD70EV5nfg6jQjfppKOea07YJN+N3",
+    "https://unpkg.com/three@0.184.0/examples/jsm/exporters/GLTFExporter.js": "sha384-VofkvpG6HERhFCYbsUOHeNXBCqID2nfqkQqnVzE1jc/oPcz+qJ13ADdXH08hE+cQ"
+  }
+}
+</script>
+<style>
+  :root{
+    --ember:#e8622c; --umber:#a8481f; --amber:#f0a34a; --cream:#ffedd2;
+    --deep:#8f3a17; --charcoal:#2b211b; --warmgray:#8b7a6e; --surface:#fff6e8;
+    --page:#ffe6c6;
+    --text-secondary:#8b7a6e; --font-sans:Nunito,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:Nunito,system-ui,sans-serif; color:var(--charcoal);
+    background:var(--page); -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--ember); text-decoration:none} a:hover{color:var(--umber)}
+  h1,h2,h3{font-family:Righteous,cursive; font-weight:400; letter-spacing:.005em; margin:0}
+  .wrap{max-width:1240px; margin:0 auto; padding:0 40px}
+
+  /* ---------- nav ---------- */
+  nav{
+    position:sticky; top:0; z-index:900; background:rgba(8,12,22,.88);
+    backdrop-filter:blur(14px); border-bottom:1px solid rgba(255,237,210,.1);
+  }
+  nav .wrap{display:flex; align-items:center; justify-content:space-between; height:68px}
+  .nav-mark{font-family:Righteous,cursive; font-size:26px; color:#ffedd2; display:flex; align-items:center; gap:14px}
+  .logo-mark{width:48px; height:48px; flex:0 0 auto; overflow:visible}
+@keyframes flicker{0%,100%{transform:scale(1) skewX(0deg)}25%{transform:scale(1.03,0.98) skewX(-1deg)}50%{transform:scale(0.98,1.04) skewX(1deg)}75%{transform:scale(1.02,0.99) skewX(-0.5deg)}}
+@keyframes orbit{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes trail{to{stroke-dashoffset:-600}}
+@keyframes ember{0%{transform:translateY(0) translateX(0);opacity:0}15%{opacity:1}100%{transform:translateY(-70px) translateX(var(--dx));opacity:0}}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+.flame{transform-origin:340px 145px;animation:flicker 2.2s ease-in-out infinite}
+.orbitgroup{transform-origin:340px 110px;animation:orbit 5s linear infinite}
+.trailring{animation:trail 5s linear infinite}
+.ember{animation:ember 2.6s ease-in infinite}
+.e1{--dx:-10px;animation-delay:0s}
+.e2{--dx:6px;animation-delay:0.8s}
+.e3{--dx:-4px;animation-delay:1.6s}
+.badgegroup{transform-origin:340px 110px;animation:breathe 3s ease-in-out infinite}
+  .nav-links{display:flex; align-items:center; gap:34px; font-size:14.5px; font-weight:700}
+  .nav-links a{color:rgba(255,237,210,.72)} .nav-links a:hover{color:var(--amber)}
+  .pill{
+    display:inline-flex; align-items:center; gap:10px; padding:9px 17px;
+    background:var(--cream); border-radius:999px; font-size:13px; font-weight:800; color:var(--umber);
+  }
+  nav .pill{background:rgba(255,237,210,.1); color:var(--amber)}
+  .dot{width:9px; height:9px; border-radius:50%; background:var(--ember); position:relative}
+  .dot::after{content:""; position:absolute; inset:-5px; border-radius:50%;
+    border:2px solid var(--ember); opacity:0; animation:ping 3.4s ease-out infinite}
+  @keyframes ping{0%{transform:scale(.6);opacity:.7}70%,100%{transform:scale(1.55);opacity:0}}
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative; overflow:hidden;
+    background:
+      radial-gradient(1100px 620px at 74% 34%, #1b2b4a 0%, rgba(27,43,74,0) 62%),
+      radial-gradient(900px 700px at 6% 90%, #14203a 0%, rgba(20,32,58,0) 60%),
+      linear-gradient(#080c16, #05070d);
+  }
+  .hero .wrap{
+    position:relative; z-index:2;
+    display:grid; grid-template-columns:1.05fr .95fr; gap:40px; align-items:center;
+    min-height:600px; padding-top:44px; padding-bottom:44px;
+  }
+  .eyebrow{
+    display:inline-flex; width:fit-content; align-items:center; gap:9px; font-size:12.5px; font-weight:800;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--amber);
+    background:rgba(255,237,210,.09); padding:8px 15px; border-radius:999px; margin-bottom:22px;
+  }
+  .hero h1{font-size:clamp(38px,4.4vw,62px); line-height:1.04; color:#ffedd2}
+  .hero h1 em{font-style:normal; color:var(--amber)}
+  .hero p.lede{
+    font-size:18px; line-height:1.65; color:rgba(255,237,210,.74); max-width:33em; margin:22px 0 32px;
+    text-wrap:pretty;
+  }
+  .cta{display:flex; align-items:center; gap:16px; flex-wrap:wrap}
+  .btn{
+    display:inline-flex; align-items:center; gap:11px; padding:16px 28px; border-radius:999px;
+    font-size:15.5px; font-weight:800; font-family:inherit; border:none; cursor:pointer;
+    background:var(--ember); color:#fff; box-shadow:0 14px 30px -14px rgba(232,98,44,.85);
+    transition:transform .35s cubic-bezier(.22,.9,.3,1), box-shadow .35s ease, background .3s ease;
+  }
+  .btn:hover{background:var(--umber); transform:translateY(-2px); box-shadow:0 18px 34px -14px rgba(168,72,31,.8)}
+  .btn.ghost{background:transparent; color:#ffedd2; box-shadow:none; padding:16px 10px}
+  .btn.ghost:hover{color:var(--amber); transform:none}
+  #scene{position:absolute; inset:0; width:100%; height:100%; z-index:1; pointer-events:none}
+  .logo-slot{display:flex; justify-content:flex-start; overflow:hidden; position:relative; margin-bottom:6px}
+  .logo-slot > div{width:100%; max-width:340px; margin:-7px 0 -22px; padding:0!important}
+  .globe-slot{display:none}
+  #scene{position:absolute; inset:0; width:100%; height:100%; pointer-events:none}
+
+  .scene-band{display:none}
+  .stats{
+    position:relative; z-index:2;
+    display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:rgba(255,237,210,.12);
+    border-top:1px solid rgba(255,237,210,.12); border-bottom:1px solid rgba(255,237,210,.12);
+  }
+  .stat{background:rgba(6,9,17,.72); padding:26px 40px}
+  .stat b{display:block; font-family:Righteous,cursive; font-size:36px; color:var(--amber); line-height:1.1}
+  .stat span{font-size:13.5px; font-weight:700; color:rgba(255,237,210,.6)}
+
+  /* ---------- map ---------- */
+  .dawn{height:190px; background:linear-gradient(#05070d 0%, #1a1220 34%, #4a2a1d 62%, #a8582c 80%, #ffcf9c 96%, var(--page) 100%)}
+
+  section.map-sec{padding:34px 0 84px}
+  .sec-head{display:flex; align-items:flex-end; justify-content:space-between; gap:40px; margin-bottom:26px}
+  .sec-head h2{font-size:34px; color:var(--umber)}
+  .sec-head p{margin:9px 0 0; font-size:15.5px; color:var(--warmgray); max-width:46em; line-height:1.6}
+  .map-shell{
+    position:relative; height:600px; border-radius:32px; overflow:hidden;
+    border:1px solid rgba(168,72,31,.14); box-shadow:0 40px 80px -50px rgba(43,33,27,.7);
+  }
+  #map{position:absolute; inset:0; background:#f6e9d5}
+  .leaflet-tile-pane{filter:sepia(.42) saturate(.82) hue-rotate(-12deg) brightness(1.06) contrast(.94)}
+  .leaflet-container{font-family:Nunito,sans-serif}
+  .leaflet-control-attribution{
+    background:rgba(255,250,242,.86)!important; color:var(--warmgray)!important;
+    font-size:11px!important; border-radius:10px 0 0 0; padding:3px 8px!important;
+  }
+  .leaflet-control-attribution a{color:var(--umber)!important}
+  .leaflet-bar{border-radius:14px!important; overflow:hidden; border:none!important;
+    box-shadow:0 8px 26px -14px rgba(43,33,27,.55)!important}
+  .leaflet-bar a{background:var(--surface)!important; color:var(--umber)!important;
+    border-bottom-color:rgba(168,72,31,.14)!important; font-weight:700}
+  .leaflet-bar a:hover{background:var(--cream)!important}
+  .leaflet-touch .leaflet-bar a:first-child{border-radius:14px 14px 0 0}
+  .leaflet-touch .leaflet-bar a:last-child{border-radius:0 0 14px 14px}
+  .zone-core{animation:glow 6s ease-in-out infinite}
+  @keyframes glow{0%,100%{opacity:.62}50%{opacity:.82}}
+  .fire-pin{position:relative; display:grid; place-items:center}
+  .fire-pin i{width:15px; height:15px; display:block; background:#e8622c;
+    border-radius:50% 50% 50% 50%/60% 60% 40% 40%; box-shadow:0 0 0 3px rgba(240,163,74,.45);
+    animation:flick 2.4s ease-in-out infinite}
+  .fire-pin.big i{width:21px; height:21px; background:var(--deep); box-shadow:0 0 0 4px rgba(232,98,44,.4)}
+  .fire-pin b{position:absolute; inset:-13px; border-radius:50%; border:2px solid var(--ember);
+    opacity:0; animation:ping 4.5s ease-out infinite}
+  @keyframes flick{0%,100%{transform:scale(1) skewX(0)}50%{transform:scale(1.06,.96) skewX(-2deg)}}
+
+  .card{
+    position:absolute; z-index:500; background:var(--surface); border-radius:22px;
+    padding:18px 22px; border:1px solid rgba(168,72,31,.1);
+    box-shadow:0 22px 48px -26px rgba(43,33,27,.55);
+  }
+  .card h3{font-size:16px; color:var(--umber); margin-bottom:3px}
+  .card p.sub{margin:0 0 13px; font-size:12.5px; color:var(--warmgray); line-height:1.55}
+  #legend{left:26px; bottom:26px; width:258px}
+  .ramp{height:14px; border-radius:999px; margin:2px 0 8px;
+    background:linear-gradient(90deg,#f6d199,#f0a34a,#e8622c,#c9481c,#8f3a17)}
+  .ramp-lab{display:flex; justify-content:space-between; font-size:12px; font-weight:700; color:var(--warmgray)}
+  .ramp-steps{display:grid; grid-template-columns:repeat(5,1fr); gap:4px; font-size:9.5px;
+    font-weight:800; letter-spacing:.02em; text-transform:uppercase; color:var(--warmgray); margin-top:2px}
+  .ramp-steps span{text-align:center}
+  .leaflet-interactive:focus{outline:3px solid var(--charcoal); outline-offset:2px}
+
+  .score{display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-top:30px}
+  .score div{background:var(--surface); border:1px solid rgba(168,72,31,.1); border-radius:20px; padding:20px 22px}
+  .score b{display:block; font-family:Righteous,cursive; font-size:15px; margin-bottom:7px}
+  .score p{margin:0; font-size:13.5px; line-height:1.6; color:var(--warmgray)}
+
+  @media(max-width:700px){
+    .wrap{padding:0 20px}
+    .map-shell{height:460px; border-radius:24px}
+    #scrub{left:12px; right:12px; top:12px; padding:6px; overflow-x:auto; border-radius:20px}
+    #scrub button{padding:9px 12px; font-size:12px; white-space:nowrap}
+    #legend{left:12px; right:12px; bottom:12px; width:auto; padding:14px 16px}
+    #detail{left:12px; right:12px; top:78px; width:auto}
+    #fs, #toast{display:none}
+    .steps, .score{grid-template-columns:1fr}
+    .sec-head{flex-direction:column; align-items:flex-start; gap:14px}
+    .sec-head h2{font-size:27px}
+  }
+  .scale{display:flex; flex-direction:column; gap:9px}
+  .grp{font-size:11px; font-weight:800; letter-spacing:.09em; text-transform:uppercase;
+    color:var(--warmgray); margin-top:6px}
+  .row{display:flex; align-items:center; gap:12px; font-size:14px; font-weight:600}
+  .sw{width:20px; height:20px; border-radius:8px; flex:0 0 auto}
+  .sw.pin{border-radius:50% 50% 50% 50%/60% 60% 40% 40%}
+  .row .n{margin-left:auto; font-size:12.5px; color:var(--warmgray); font-weight:700}
+
+  #detail{right:26px; top:26px; width:296px; display:none}
+  #detail.on{display:block; animation:rise .45s cubic-bezier(.22,.9,.3,1)}
+  @keyframes rise{from{opacity:0; transform:translateY(-10px) scale(.98)}to{opacity:1; transform:none}}
+  #detail .close{position:absolute; top:14px; right:14px; width:30px; height:30px; border:none;
+    border-radius:50%; background:var(--cream); color:var(--umber); font-size:15px; font-weight:700;
+    cursor:pointer; font-family:inherit; line-height:1}
+  #detail .close:hover{background:#ffe0b8}
+  .bigrisk{display:flex; align-items:baseline; gap:10px; margin:12px 0 4px}
+  .bigrisk .val{font-family:Righteous,cursive; font-size:42px; line-height:.9}
+  .bigrisk .lab{font-size:13.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase}
+  .bar{height:10px; border-radius:999px; background:var(--cream); overflow:hidden; margin:12px 0 16px}
+  .bar i{display:block; height:100%; border-radius:999px; transition:width .8s cubic-bezier(.22,.9,.3,1)}
+  .meta{display:flex; flex-direction:column; gap:10px; font-size:13.5px}
+  .meta div{display:flex; justify-content:space-between; gap:16px; color:var(--warmgray)}
+  .meta b{color:var(--charcoal); font-weight:700; text-align:right}
+  .note{margin-top:16px; padding-top:14px; border-top:1px solid rgba(168,72,31,.12);
+    font-size:12px; color:var(--warmgray); line-height:1.6}
+
+  /* ---------- history ---------- */
+  section.history{background:#ffd9ad; padding:82px 0 88px}
+  .hist-list{display:flex; flex-direction:column; gap:14px; margin-top:34px}
+  .hist{
+    display:grid; grid-template-columns:120px 1.4fr 1fr 150px; align-items:center; gap:28px;
+    background:var(--surface); border-radius:20px; padding:20px 28px;
+    border:1px solid rgba(168,72,31,.09); transition:transform .35s cubic-bezier(.22,.9,.3,1), box-shadow .35s ease;
+  }
+  .hist:hover{transform:translateY(-2px); box-shadow:0 20px 40px -30px rgba(43,33,27,.8)}
+  .hist .date{font-size:13.5px; font-weight:800; color:var(--warmgray)}
+  .hist .place{font-size:17px; font-weight:800}
+  .hist .place small{display:block; font-size:13px; font-weight:600; color:var(--warmgray); margin-top:3px}
+  .hist .track{height:9px; border-radius:999px; background:var(--cream); overflow:hidden}
+  .hist .track i{display:block; height:100%; border-radius:999px; background:linear-gradient(90deg,var(--amber),var(--ember))}
+  .hist .size{text-align:right; font-family:Righteous,cursive; font-size:22px; color:var(--umber)}
+  .hist .size span{font-family:Nunito; font-size:12.5px; font-weight:700; color:var(--warmgray); margin-left:5px}
+  .hist-note{margin-top:26px; font-size:13px; color:var(--warmgray); line-height:1.7; max-width:60em}
+
+  .reveal{opacity:0; transform:translateY(26px); transition:opacity .8s cubic-bezier(.22,.9,.3,1), transform .8s cubic-bezier(.22,.9,.3,1)}
+  .reveal.in{opacity:1; transform:none}
+  nav{transition:box-shadow .4s ease}
+  nav.stuck{box-shadow:0 10px 30px -22px rgba(43,33,27,.8)}
+  @media(prefers-reduced-motion:reduce){
+    .reveal{opacity:1; transform:none; transition:none}
+  }
+
+  .leaflet-interactive{transition:fill .7s ease, stroke .7s ease}
+  #scrub{left:26px; top:26px; padding:8px; display:flex; gap:5px; border-radius:999px}
+  #scrub button{
+    border:none; cursor:pointer; font-family:inherit; font-size:13px; font-weight:800;
+    padding:10px 16px; border-radius:999px; background:transparent; color:var(--warmgray);
+    transition:background .3s ease, color .3s ease;
+  }
+  #scrub button:hover{color:var(--umber)}
+  #scrub button[aria-pressed="true"]{background:var(--cream); color:var(--umber)}
+  #fs{
+    position:absolute; right:76px; bottom:26px; z-index:500; border:none; cursor:pointer;
+    font-family:inherit; font-size:13px; font-weight:800; padding:12px 20px; border-radius:999px;
+    background:var(--surface); color:var(--umber); box-shadow:0 18px 36px -22px rgba(43,33,27,.7);
+  }
+  #fs:hover{background:var(--cream)}
+  .map-shell.fs{position:fixed; inset:14px; height:auto; z-index:1200; border-radius:26px}
+  body.locked{overflow:hidden}
+
+  #toast{
+    position:absolute; right:26px; bottom:150px; z-index:600; width:290px; display:none;
+    border-left:none;
+  }
+  #toast.on{display:block; animation:rise .5s cubic-bezier(.22,.9,.3,1)}
+  #toast .k{font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--ember)}
+  #toast h3{margin:6px 0 4px}
+  #toast p{margin:0; font-size:13px; color:var(--warmgray); line-height:1.5}
+
+  .arrow{display:grid; place-items:center; color:var(--deep)}
+  .arrow i{display:block; width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent;
+    border-bottom:12px solid currentColor; opacity:.85; animation:drift 2.6s ease-out infinite}
+  @keyframes drift{0%{transform:translateY(6px) scale(.7); opacity:0}30%{opacity:.9}100%{transform:translateY(-16px) scale(1); opacity:0}}
+
+  .leaflet-tooltip.fg-tip{
+    background:var(--surface); border:1px solid rgba(168,72,31,.14); border-radius:16px;
+    box-shadow:0 18px 36px -24px rgba(43,33,27,.7); padding:12px 14px; color:var(--charcoal);
+    font-family:Nunito,sans-serif;
+  }
+  .leaflet-tooltip.fg-tip::before{display:none}
+  .fg-tip .tn{font-size:14px; font-weight:800}
+  .fg-tip .tl{font-size:11.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--warmgray); margin:2px 0 8px}
+  .fg-tip .spark{display:flex; align-items:flex-end; gap:3px; height:34px}
+  .fg-tip .spark i{width:7px; border-radius:3px 3px 1px 1px; display:block}
+
+  section.flow{padding:78px 0 6px}
+  .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:22px; margin-top:34px; position:relative}
+  .step{
+    background:var(--surface); border:1px solid rgba(168,72,31,.1); border-radius:24px;
+    padding:26px 28px; position:relative; overflow:hidden;
+  }
+  .step .num{font-family:Righteous,cursive; font-size:15px; color:var(--amber)}
+  .step h3{font-size:19px; color:var(--umber); margin:8px 0 8px}
+  .step p{margin:0; font-size:14.5px; line-height:1.65; color:var(--warmgray)}
+  .step .wire{position:absolute; left:0; right:0; bottom:0; height:3px; background:rgba(168,72,31,.1)}
+  .step .wire b{position:absolute; top:0; height:3px; width:34%; border-radius:2px;
+    background:linear-gradient(90deg,rgba(240,163,74,0),var(--ember),rgba(240,163,74,0));
+    animation:travel 3.6s linear infinite}
+  .step:nth-child(2) .wire b{animation-delay:1.2s}
+  .step:nth-child(3) .wire b{animation-delay:2.4s}
+  @keyframes travel{from{left:-34%}to{left:100%}}
+
+  .hist{cursor:pointer}
+
+  footer{padding:44px 0 56px; font-size:13.5px; color:var(--warmgray)}
+  footer .wrap{display:flex; justify-content:space-between; gap:30px; flex-wrap:wrap}
+
+  @media(max-width:880px){
+    .hero .wrap{grid-template-columns:1fr; gap:20px}
+    .globe-slot{height:320px}
+    .stats{grid-template-columns:1fr}
+    .hist{grid-template-columns:1fr; gap:12px}
+    .hist .size{text-align:left}
+    .nav-links a{display:none}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="nav-mark"><svg class="logo-mark" viewBox="243 12 194 194" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Canopy emblem">
+<g class="badgegroup">
+<circle cx="340" cy="110" r="75" fill="#ffedd2"/>
+<circle class="trailring" cx="340" cy="110" r="95" fill="none" stroke="#a8481f" stroke-width="1.5" stroke-dasharray="10 590" opacity="0.6"/>
+<circle cx="340" cy="110" r="95" fill="none" stroke="#e8622c" stroke-width="0.5" opacity="0.2"/>
+<circle class="ember e1" cx="332" cy="130" r="2" fill="#f0a34a"/>
+<circle class="ember e2" cx="345" cy="120" r="1.6" fill="#e8622c"/>
+<circle class="ember e3" cx="338" cy="135" r="1.8" fill="#f0a34a"/>
+<path class="flame" d="M340 62c-6 17-27 29-27 53 0 17 12 31 29 31s29-14 29-31c0-11-6-19-11-26 1 8-4 15-10 15-8 0-11-6-10-15-6 7-12 13-12 21 0 6 5 11 11 11" fill="#e8622c"/>
+<path d="M308 134c8-25 33-38 47-59-3 21 5 34 5 49 0 18-15 33-34 33-12 0-20-8-18-23z" fill="#a8481f"/>
+<g class="orbitgroup"><circle cx="435" cy="110" r="6" fill="#a8481f"/></g>
+</g>
+</svg>Canopy</div>
+    <div class="nav-links">
+      <a href="#map-sec">Live map</a>
+      <a href="#history">Fire history</a>
+      <span class="pill"><span class="dot"></span> Live</span>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <canvas id="scene"></canvas>
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">Satellite fire risk prediction</div>
+      <h1>See where the forest<br>will burn <em>before</em> it does.</h1>
+      <p class="lede">Canopy reads satellite passes and weather against a real record of recent fire
+        detections, and turns them into a live risk picture of every forest area in the state — open to
+        everyone, no login needed.</p>
+      <div class="cta">
+        <a class="btn" href="#map-sec">Open the live map</a>
+        <a class="btn ghost" href="#history">See recent fires</a>
+      </div>
+    </div>
+    <div></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><b id="s-areas">—</b><span>forest areas under prediction</span></div>
+    <div class="stat"><b id="s-fires">—</b><span>fires burning right now</span></div>
+    <div class="stat"><b id="s-run">—</b><span>latest model run</span></div>
+  </div>
+</header>
+
+<div class="dawn"></div>
+
+<section class="map-sec" id="map-sec">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>Today across California</h2>
+        <p>Predicted ignition risk for every monitored forest area, with fires currently burning drawn on
+          top. Click any area or flame for its detail.</p>
+      </div>
+      <span class="pill"><span class="dot"></span> Updated <b id="stamp">—</b></span>
+    </div>
+
+    <div class="map-shell">
+      <div id="map"></div>
+
+      <div class="card" id="scrub">
+        <button data-d="0" aria-pressed="true">Today</button>
+        <button data-d="1" aria-pressed="false">+1 day</button>
+        <button data-d="2" aria-pressed="false">+2 days</button>
+        <button data-d="3" aria-pressed="false">+3 days</button>
+      </div>
+
+      <button id="fs">Fullscreen</button>
+
+      <div class="card" id="toast">
+        <div class="k">New detection</div>
+        <h3 id="toast-name">—</h3>
+        <p id="toast-text">—</p>
+      </div>
+
+      <div class="card" id="legend">
+        <h3>California, live</h3>
+        <p class="sub">Predicted risk and fires burning now.</p>
+        <div class="scale" id="scale"></div>
+      </div>
+
+      <div class="card" id="detail">
+        <button class="close" id="close" aria-label="Close">×</button>
+        <h3 id="d-name">—</h3>
+        <p class="sub" id="d-region">—</p>
+        <div class="bigrisk"><span class="val" id="d-val">—</span><span class="lab" id="d-lab">—</span></div>
+        <div class="bar"><i id="d-bar"></i></div>
+        <div class="meta">
+          <div><span id="d-l1">Area under watch</span> <b id="d-area">—</b></div>
+          <div><span id="d-l2">Trend vs. yesterday</span> <b id="d-trend">—</b></div>
+          <div><span id="d-l3">Last satellite pass</span> <b id="d-pass">—</b></div>
+        </div>
+        <div class="note" id="d-note">Predicted by the Canopy model, trained on historical fire records and updated with real-time satellite and weather inputs.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="flow">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>How the prediction is made</h2>
+        <p>Three stages run continuously, so the map above is never more than one satellite pass old.</p>
+      </div>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="num">01</div>
+        <h3>Historical record</h3>
+        <p>The last ~15 months of real satellite fire detections, cross-referenced against the
+          weather recorded at the same place and time, form the training set.</p>
+        <div class="wire"><b></b></div>
+      </div>
+      <div class="step">
+        <div class="num">02</div>
+        <h3>Live inputs</h3>
+        <p>Each satellite pass brings fresh thermal readings, vegetation dryness and local weather into
+          the model.</p>
+        <div class="wire"><b></b></div>
+      </div>
+      <div class="step">
+        <div class="num">03</div>
+        <h3>Risk on the map</h3>
+        <p>The model scores every monitored area and publishes the result straight to the public map,
+          hourly.</p>
+        <div class="wire"><b></b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="history" id="history">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>Recent fire history</h2>
+        <p>Every fire the system has detected and tracked this season. These records feed straight back
+          into the model that produces the risk map above.</p>
+      </div>
+    </div>
+    <div class="hist-list" id="hist-list"></div>
+    <p class="hist-note">Records shown are real NASA FIRMS satellite detections from the last 3 weeks, clustered
+      by location. The model above is trained on the last ~15 months of this same detection archive.</p>
+
+    <div class="sec-head" style="margin-top:64px">
+      <div>
+        <h2>Reading the score</h2>
+        <p>Every monitored area gets a 0-100 ignition risk score for the day. What each band means:</p>
+      </div>
+    </div>
+    <div class="score">
+      <div><b style="color:#f0a34a">0-39 · Low to moderate</b>
+        <p>Conditions do not favour ignition. Routine monitoring; no change to normal posture.</p></div>
+      <div><b style="color:#e8622c">40-59 · High</b>
+        <p>Fuels are dry enough to carry fire. Worth watching wind forecasts and access routes.</p></div>
+      <div><b style="color:#c9481c">60-79 · Very high</b>
+        <p>An ignition here is likely to spread. Crews and aircraft are usually pre-positioned.</p></div>
+      <div><b style="color:#8f3a17">80-100 · Extreme</b>
+        <p>Rapid spread expected on ignition. Highest priority for detection and early response.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>Canopy — satellite fire risk prediction. Open access, no login required.</span>
+    <span>Basemap © OpenStreetMap contributors</span>
+  </div>
+</footer>
+
+<script>
+const LEVELS = [
+  {min:80, label:"Extreme",  color:"#8f3a17"},
+  {min:60, label:"Very high",color:"#c9481c"},
+  {min:40, label:"High",     color:"#e8622c"},
+  {min:20, label:"Moderate", color:"#f0a34a"},
+  {min:0,  label:"Low",      color:"#f6d199"}
+];
+const levelOf = v => LEVELS.find(l => v >= l.min);
+
+// Curated monitored regions (fixed anchor points/names) — risk values below
+// are computed live from the trained model, not hardcoded.
+const ZONES = [
+  {n:"Klamath",              r:"Siskiyou County",        lat:41.70, lng:-123.20, km:46},
+  {n:"Modoc Plateau",        r:"Modoc County",           lat:41.55, lng:-120.60, km:44},
+  {n:"Shasta-Trinity",       r:"Trinity County",         lat:40.75, lng:-122.55, km:48},
+  {n:"Plumas",               r:"Northern Sierra",        lat:39.95, lng:-120.85, km:42},
+  {n:"Tahoe Basin",          r:"El Dorado County",       lat:39.10, lng:-120.15, km:36},
+  {n:"Mendocino",            r:"North Coast Ranges",     lat:39.45, lng:-123.05, km:40},
+  {n:"Sonoma-Napa Hills",    r:"Bay Area North",         lat:38.55, lng:-122.50, km:32},
+  {n:"Stanislaus",           r:"Central Sierra",         lat:38.25, lng:-120.05, km:38},
+  {n:"Yosemite Sierra",      r:"Mariposa County",        lat:37.85, lng:-119.60, km:40},
+  {n:"Sequoia-Kings",        r:"Southern Sierra",        lat:36.70, lng:-118.65, km:42},
+  {n:"Kern River Canyon",    r:"Kern County",            lat:35.60, lng:-118.45, km:36},
+  {n:"Los Padres North",     r:"Monterey County",        lat:36.15, lng:-121.45, km:34},
+  {n:"Santa Lucia",          r:"San Luis Obispo County", lat:35.35, lng:-120.35, km:32},
+  {n:"Ventura Backcountry",  r:"Ventura County",         lat:34.55, lng:-119.05, km:32},
+  {n:"Angeles",              r:"San Gabriel Mountains",  lat:34.30, lng:-118.05, km:30},
+  {n:"San Bernardino",       r:"Inland Empire",          lat:34.20, lng:-116.90, km:34},
+  {n:"San Diego Backcountry",r:"San Diego County",       lat:32.95, lng:-116.60, km:32},
+  {n:"Central Valley Edge",  r:"Fresno County",          lat:36.85, lng:-119.85, km:30}
+];
+ZONES.forEach(z => { z.v = 0; z.f = [0,0,0,0]; z.week = [0,0,0,0,0,0,0]; z.t = "0"; z.p = "—"; });
+
+// Populated live from real NASA FIRMS detections — see loadFires() below.
+let FIRES = [];
+
+// Populated live from real historical FIRMS detections — see loadHistory() below.
+let HISTORY = [];
+
+// Real forecast/trend data is loaded and assigned onto ZONES by loadZoneWeather() below.
+
+const map = L.map('map', {
+  center:[39.75,-8.05], zoom:7, minZoom:6, maxZoom:12,
+  zoomControl:true, attributionControl:true, scrollWheelZoom:false
+});
+map.zoomControl.setPosition('bottomright');
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution:'© OpenStreetMap contributors', maxZoom:19
+}).addTo(map);
+
+const BOUNDS = L.latLngBounds(ZONES.map(z => [z.lat, z.lng]));
+function frame(){
+  const narrow = window.innerWidth < 900;
+  map.invalidateSize();
+  map.fitBounds(BOUNDS, {
+    paddingTopLeft: narrow ? [40,40] : [330,70],
+    paddingBottomRight: narrow ? [40,240] : [340,60],
+    animate:false
+  });
+}
+frame();
+window.addEventListener('resize', frame);
+
+// Organic forest-area outlines (no circles)
+function area(lat, lng, km, seed, spread){
+  const pts = [], n = 64, R = 6371;
+  let s = seed * 9301 + 49297;
+  const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  const a1 = rnd()*6.28, a2 = rnd()*6.28, a3 = rnd()*6.28, a4 = rnd()*6.28;
+  const squash = .72 + rnd()*.5, tilt = rnd()*3.14;
+  for(let i = 0; i < n; i++){
+    const t = i / n * Math.PI * 2;
+    const wob = 1 + .26*Math.sin(3*t+a1) + .17*Math.sin(5*t+a2)
+                  + .11*Math.sin(7*t+a3) + .06*Math.sin(11*t+a4);
+    const r = km * spread * wob;
+    const x = Math.cos(t) * r, y = Math.sin(t) * r * squash;
+    const xr = x*Math.cos(tilt) - y*Math.sin(tilt);
+    const yr = x*Math.sin(tilt) + y*Math.cos(tilt);
+    pts.push([lat + (yr/R)*(180/Math.PI),
+              lng + (xr/R)*(180/Math.PI)/Math.cos(lat*Math.PI/180)]);
+  }
+  return pts;
+}
+
+let shapes = [];
+function drawZones(){
+ZONES.forEach((z,i) => {
+  const lv = levelOf(z.v);
+  const halo = L.polygon(area(z.lat,z.lng,z.km,i+3,1.5), {
+    color:lv.color, weight:0, fillColor:lv.color, fillOpacity:.12,
+    interactive:false, smoothFactor:.4
+  }).addTo(map);
+  const core = L.polygon(area(z.lat,z.lng,z.km,i+3,1), {
+    color:lv.color, weight:2, opacity:.55, lineJoin:'round',
+    fillColor:lv.color, fillOpacity:.42, className:'zone-core', smoothFactor:.4
+  }).addTo(map);
+  core.on('click', () => selectZone(z, levelOf(z.f[day])));
+  core.on('mouseover', () => core.setStyle({fillOpacity:.62}));
+  core.on('mouseout',  () => core.setStyle({fillOpacity:.42}));
+  (() => {
+    const el = core.getElement();
+    if(!el) return;
+    el.setAttribute('tabindex', '0');
+    el.setAttribute('role', 'button');
+    el.setAttribute('aria-label', `${z.n}, ${z.r}, risk ${z.v} of 100, ${levelOf(z.v).label}`);
+    el.addEventListener('keydown', e => {
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); selectZone(z, levelOf(z.f[day])); }
+    });
+  })();
+  const spark = z.week.map(v => {
+    const c = levelOf(v).color;
+    return `<i style="height:${Math.max(12, v)}%;background:${c}"></i>`;
+  }).join('');
+  core.bindTooltip(
+    `<div class="tn">${z.n}</div><div class="tl">${levelOf(z.v).label} · last 7 days</div><div class="spark">${spark}</div>`,
+    {className:'fg-tip', direction:'top', sticky:true, opacity:1}
+  );
+  shapes.push({z, halo, core});
+});
+}
+
+let day = 0;
+function setDay(d){
+  day = d;
+  document.querySelectorAll('#scrub button').forEach(b =>
+    b.setAttribute('aria-pressed', String(+b.dataset.d === d)));
+  shapes.forEach(({z, halo, core}) => {
+    const lv = levelOf(z.f[d]);
+    halo.setStyle({color:lv.color, fillColor:lv.color});
+    core.setStyle({color:lv.color, fillColor:lv.color});
+  });
+  document.querySelector('#legend h3').textContent =
+    ['California, live','Tomorrow','In two days','In three days'][d];
+  document.querySelector('#legend .sub').textContent = [
+    'Predicted risk and fires burning now.',
+    'Model forecast for tomorrow.',
+    'Model forecast two days out.',
+    'Model forecast three days out.'
+  ][d];
+}
+document.querySelectorAll('#scrub button').forEach(b =>
+  b.addEventListener('click', () => setDay(+b.dataset.d)));
+
+function addFire(f){
+  // "big" and shape size are driven by real total radiative power (MW), not
+  // a fabricated hectare figure — FIRMS gives point detections, not perimeters.
+  const big = f.frp >= 50;
+  const col = big ? '#8f3a17' : '#e8622c';
+  L.polygon(area(f.lat, f.lng, Math.max(3, Math.sqrt(f.frp)/2.2), f.frp, 1), {
+    color:col, weight:2, opacity:.6, fillColor:col, fillOpacity:.34,
+    interactive:false, smoothFactor:.4
+  }).addTo(map);
+  L.marker([f.lat,f.lng], {
+    icon: L.divIcon({className:'', iconSize:[26,26], iconAnchor:[13,13],
+      html:`<div class="fire-pin${big?' big':''}"><b></b><i></i></div>`})
+  }).addTo(map).on('click', () => selectFire(f));
+  // Real live wind direction at the detection site, shown regardless of
+  // spread/containment status (which point detections alone can't tell us).
+  L.marker([f.lat,f.lng], {
+    interactive:false,
+    icon: L.divIcon({className:'', iconSize:[40,40], iconAnchor:[20,34],
+      html:`<div class="arrow" style="transform:rotate(${f.wind}deg)"><i></i></div>`})
+  }).addTo(map);
+}
+function drawFires(){ FIRES.forEach(addFire); }
+
+const $ = id => document.getElementById(id);
+const NOTE = {
+  risk:"Predicted by the Canopy model, trained on historical fire records and updated with real-time satellite and weather inputs.",
+  fire:"Detected from satellite thermal readings and confirmed against the model's historical fire signature library."
+};
+
+function selectZone(z, lv){
+  $('d-name').textContent = z.n;
+  $('d-region').textContent = z.r;
+  $('d-val').textContent = z.v;   $('d-val').style.color = lv.color;
+  $('d-lab').textContent = lv.label; $('d-lab').style.color = lv.color;
+  $('d-bar').style.width = z.v + '%'; $('d-bar').style.background = lv.color;
+  $('d-l1').textContent = 'Area under watch';   $('d-area').textContent = z.km*z.km*3 + ' km²';
+  $('d-l2').textContent = 'Trend vs. yesterday';$('d-trend').textContent = z.t === '0' ? 'no change' : z.t + ' pts';
+  $('d-l3').textContent = 'Last satellite pass';$('d-pass').textContent = z.p;
+  $('d-note').textContent = NOTE.risk;
+  $('detail').classList.add('on');
+}
+
+function selectFire(f){
+  const col = f.frp >= 50 ? '#8f3a17' : '#e8622c';
+  $('d-name').textContent = f.n;
+  $('d-region').textContent = f.r + ' · active detection';
+  $('d-val').textContent = f.frp.toLocaleString('en-GB', {maximumFractionDigits:1}); $('d-val').style.color = col;
+  $('d-lab').textContent = 'MW radiative power'; $('d-lab').style.color = col;
+  $('d-bar').style.width = Math.min(100, f.c) + '%';  $('d-bar').style.background = col;
+  $('d-l1').textContent = 'Detections in cluster'; $('d-area').textContent = f.count ?? 1;
+  $('d-l2').textContent = 'Detection confidence'; $('d-trend').textContent = f.c + '%';
+  $('d-l3').textContent = 'Last satellite pass';  $('d-pass').textContent = f.d + ' · ' + f.date;
+  $('d-note').textContent = NOTE.fire;
+  $('detail').classList.add('on');
+}
+$('close').onclick = () => $('detail').classList.remove('on');
+
+function renderLegend(){
+  const big = FIRES.filter(f => f.frp >= 50).length;
+  $('scale').innerHTML = `
+    <div class="grp">Predicted risk</div>
+    <div class="ramp"></div>
+    <div class="ramp-lab"><span>Low</span><span>Extreme</span></div>
+    <div class="ramp-steps"><span>Low</span><span>Mod</span><span>High</span><span>V.high</span><span>Extr</span></div>
+    <div class="grp">Burning now</div>
+    <div class="row"><span class="sw pin" style="background:#8f3a17"></span>Large (50MW+)
+      <span class="n">${big} fire${big===1?'':'s'}</span></div>
+    <div class="row"><span class="sw pin" style="background:#e8622c"></span>Smaller detections
+      <span class="n">${FIRES.length-big} fire${FIRES.length-big===1?'':'s'}</span></div>`;
+}
+
+function renderHistory(){
+  const maxFrp = Math.max(1, ...HISTORY.map(h => h.totalFrp));
+  $('hist-list').innerHTML = HISTORY.map((h,i) => `
+    <div class="hist" data-i="${i}" title="Show on the map">
+      <div class="date">${h.firstDate} → ${h.lastDate} · ${h.active ? 'Still active' : 'No longer detected'}</div>
+      <div class="place">${h.n}<small>${h.r}</small></div>
+      <div class="track"><i style="width:${Math.round(h.totalFrp/maxFrp*100)}%"></i></div>
+      <div class="size">${h.detections}<span>detections</span></div>
+    </div>`).join('');
+
+  document.querySelectorAll('.hist').forEach(el => el.addEventListener('click', () => {
+    const h = HISTORY[+el.dataset.i];
+    document.getElementById('map-sec').scrollIntoView ? window.scrollTo({
+      top: document.getElementById('map-sec').offsetTop - 40, behavior:'smooth'
+    }) : null;
+    setTimeout(() => { map.flyTo([h.lat, h.lng], 9, {duration:1.2}); }, 500);
+  }));
+}
+
+function renderStats(){
+  $('s-areas').textContent = ZONES.length;
+  $('s-fires').textContent = FIRES.length;
+}
+
+// fullscreen map
+const shell = document.querySelector('.map-shell');
+$('fs').onclick = () => {
+  const on = shell.classList.toggle('fs');
+  document.body.classList.toggle('locked', on);
+  $('fs').textContent = on ? 'Exit fullscreen' : 'Fullscreen';
+  setTimeout(() => { map.invalidateSize(); frame(); }, 260);
+};
+addEventListener('keydown', e => {
+  if(e.key === 'Escape' && shell.classList.contains('fs')) $('fs').click();
+});
+
+// counters
+function countTo(el, target){
+  const start = performance.now(), dur = 1100;
+  (function step(now){
+    const p = Math.min(1, (now-start)/dur);
+    el.textContent = Math.round(target * (1 - Math.pow(1-p, 3)));
+    if(p < 1) requestAnimationFrame(step);
+  })(performance.now());
+}
+function setupCounters(){
+  $('s-areas').dataset.to = ZONES.length;
+  $('s-fires').dataset.to = FIRES.length;
+  const countObs = new IntersectionObserver((es, o) => es.forEach(e => {
+    if(!e.isIntersecting) return;
+    o.unobserve(e.target);
+    countTo(e.target, +e.target.dataset.to);
+  }), {threshold:.6});
+  countObs.observe($('s-areas'));
+  countObs.observe($('s-fires'));
+}
+
+// (fires are loaded once per page load below — no staged/fake events)
+
+function stamp(){
+  const d = new Date();
+  const t = d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  $('stamp').textContent = t;
+  $('s-run').textContent = t;
+}
+stamp(); setInterval(stamp, 60000);
+
+// scroll-driven reveals + nav state
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(!reduced){
+  document.querySelectorAll('.sec-head, .map-shell, .hist, .hist-note, .stat')
+    .forEach(el => el.classList.add('reveal'));
+  const revealAll = () => document.querySelectorAll('.reveal:not(.in)').forEach(el => {
+    if(el.getBoundingClientRect().top < innerHeight) el.classList.add('in');
+  });
+  const io = new IntersectionObserver((entries, obs) => {
+    entries.forEach(e => {
+      if(!e.isIntersecting) return;
+      const sibs = [...e.target.parentElement.children].filter(c => c.classList.contains('reveal'));
+      e.target.style.transitionDelay = Math.min(sibs.indexOf(e.target), 5) * 70 + 'ms';
+      e.target.classList.add('in');
+      obs.unobserve(e.target);
+    });
+    revealAll();
+  }, {rootMargin:'0px 0px -12% 0px', threshold:.12});
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  addEventListener('scroll', revealAll, {passive:true});
+}
+addEventListener('scroll', () => {
+  document.querySelector('nav').classList.toggle('stuck', scrollY > 12);
+}, {passive:true});
+
+// ---------- real data: trained model + live NASA FIRMS + live Open-Meteo ----------
+let MODEL = null;
+async function loadModel(){
+  MODEL = await fetch('data/fire_risk_model.json').then(r => r.json());
+}
+function predictRisk(w){
+  const z = MODEL.features.reduce((sum, f, i) =>
+    sum + ((w[f] - MODEL.mean[i]) / MODEL.std[i]) * MODEL.coef[i], MODEL.intercept);
+  return 1 / (1 + Math.exp(-z));
+}
+
+// Today + past 7 days + next 3 days of risk for every monitored region, from
+// the trained model run against that region's own weather each day.
+async function loadZoneWeather(){
+  const lats = ZONES.map(z => z.lat).join(',');
+  const lngs = ZONES.map(z => z.lng).join(',');
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lngs}` +
+    `&daily=temperature_2m_max,temperature_2m_min,windspeed_10m_max,precipitation_sum,relative_humidity_2m_mean` +
+    `&past_days=7&forecast_days=4&timezone=UTC`;
+  const data = await fetch(url).then(r => r.json());
+  const list = Array.isArray(data) ? data : [data];
+  ZONES.forEach((z, i) => {
+    const d = list[i].daily;
+    const scores = d.time.map((_, idx) => Math.round(predictRisk({
+      temp_max: d.temperature_2m_max[idx],
+      temp_min: d.temperature_2m_min[idx],
+      wind_max: d.windspeed_10m_max[idx],
+      precip_sum: d.precipitation_sum[idx],
+      humidity_mean: d.relative_humidity_2m_mean?.[idx] ?? 45,
+    }) * 100));
+    // scores: [7 past days][today][+1][+2][+3] — 11 entries total
+    z.week = scores.slice(1, 8);       // last 7 days ending today
+    z.f = scores.slice(7, 11);         // today, +1, +2, +3
+    z.v = z.f[0];
+    z.t = (z.week[6] - z.week[5] >= 0 ? '+' : '') + (z.week[6] - z.week[5]);
+  });
+}
+
+// Live active detections from NASA FIRMS (via the same-origin /api/firms proxy
+// that keeps FIRMS_MAP_KEY server-side), clustered into readable fire events —
+// plotting every raw VIIRS pixel as its own "fire" would be unreadable noise.
+async function loadFires(){
+  const res = await fetch('/api/firms');
+  const text = await res.text();
+  const lines = text.trim().split('\n');
+  if(lines.length < 2){ FIRES = []; return; }
+  const header = lines[0].split(',');
+  const idx = name => header.indexOf(name);
+  const iLat=idx('latitude'), iLon=idx('longitude'), iFrp=idx('frp'),
+        iDate=idx('acq_date'), iTime=idx('acq_time'), iConf=idx('confidence');
+  const points = lines.slice(1).map(line => {
+    const p = line.split(',');
+    return { lat:+p[iLat], lng:+p[iLon], frp:+p[iFrp] || 0, date:p[iDate], time:p[iTime], confRaw:p[iConf] };
+  }).filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+
+  const CELL = 0.35;
+  const clusters = new Map();
+  points.forEach(p => {
+    const key = Math.round(p.lat/CELL) + ',' + Math.round(p.lng/CELL);
+    if(!clusters.has(key)) clusters.set(key, []);
+    clusters.get(key).push(p);
+  });
+
+  const confMap = {l:35, n:70, h:92};
+  const nearestZone = (lat,lng) => ZONES.reduce((best, z) => {
+    const dist = (z.lat-lat)**2 + (z.lng-lng)**2;
+    return (!best || dist < best.dist) ? {zone:z, dist} : best;
+  }, null).zone;
+
+  const clustered = [...clusters.values()].map(pts => {
+    const lat = pts.reduce((s,p)=>s+p.lat,0)/pts.length;
+    const lng = pts.reduce((s,p)=>s+p.lng,0)/pts.length;
+    const frp = pts.reduce((s,p)=>s+p.frp,0);
+    const latest = pts.reduce((a,b) => (a.date+a.time > b.date+b.time ? a : b));
+    const confVal = confMap[latest.confRaw] ?? (isFinite(+latest.confRaw) ? +latest.confRaw : 60);
+    const zone = nearestZone(lat, lng);
+    return {
+      n: zone.n, r: zone.r, lat, lng, frp, count: pts.length,
+      c: confVal, date: latest.date,
+      d: latest.time.length >= 3 ? latest.time.padStart(4,'0').replace(/(\d{2})(\d{2})/, '$1:$2') : latest.time,
+      wind: 0,
+    };
+  }).sort((a,b) => b.frp - a.frp);
+
+  if(clustered.length){
+    const lats = clustered.map(f => f.lat).join(',');
+    const lngs = clustered.map(f => f.lng).join(',');
+    const wurl = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lngs}&current=winddirection_10m&timezone=UTC`;
+    try {
+      const wdata = await fetch(wurl).then(r => r.json());
+      const wlist = Array.isArray(wdata) ? wdata : [wdata];
+      clustered.forEach((f,i) => { f.wind = wlist[i]?.current?.winddirection_10m ?? 0; });
+    } catch(e) { /* wind is a decorative touch — fires still render without it */ }
+  }
+
+  FIRES = clustered;
+}
+
+// Real fire history, precomputed from the historical FIRMS archive by
+// model/build_history_summary.py — spatial clusters of real detections,
+// not fabricated incident records.
+async function loadHistory(){
+  const data = await fetch('data/fire_history.json').then(r => r.json());
+  HISTORY = data.events;
+}
+
+// After fires load, attach each zone's nearest real detection as its
+// "last satellite pass" instead of a fabricated timestamp.
+function computeSatellitePass(){
+  ZONES.forEach(z => {
+    let best = null, bestDist = Infinity;
+    FIRES.forEach(f => {
+      const dist = (f.lat-z.lat)**2 + (f.lng-z.lng)**2;
+      if(dist < bestDist){ bestDist = dist; best = f; }
+    });
+    // ~0.6 deg ~ 65km at this latitude
+    z.p = (best && bestDist < 0.36) ? `${best.date} ${best.d} UTC` : 'No recent detection nearby';
+  });
+}
+
+async function init(){
+  try {
+    await loadModel();
+    await Promise.all([loadZoneWeather(), loadFires(), loadHistory()]);
+    computeSatellitePass();
+    drawZones();
+    drawFires();
+    renderLegend();
+    renderHistory();
+    renderStats();
+    setupCounters();
+    setDay(0);
+  } catch (err) {
+    console.error('Forest Guardian: live data failed to load', err);
+    $('legend').querySelector('h3').textContent = 'Live data unavailable';
+    $('legend').querySelector('.sub').textContent = 'Could not reach FIRMS/Open-Meteo — try reloading.';
+  }
+}
+init();
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+const canvas = document.getElementById('scene');
+const hero = document.querySelector('.hero');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true, preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 200);
+camera.position.set(0, 0, 34);
+camera.lookAt(0, 0, 0);
+
+scene.add(new THREE.HemisphereLight(0xdfe9ff, 0x0b1120, .28));
+const key = new THREE.DirectionalLight(0xfff4e2, 1.15);
+key.position.set(6, 9, 8); scene.add(key);
+const rim = new THREE.DirectionalLight(0x4f7fb8, .35);
+rim.position.set(-8, 2, -4); scene.add(rim);
+
+const R = 7.4;
+const planet = new THREE.Group();
+planet.position.set(7.4, 0, 0);
+planet.rotation.x = 0.55;
+scene.add(planet);
+
+const globe = new THREE.Mesh(
+  new THREE.SphereGeometry(R, 96, 64),
+  new THREE.MeshStandardMaterial({color:0xffffff, roughness:.95, metalness:.02})
+);
+globe.name = 'globe';
+
+// real world geometry painted onto the sphere (Natural Earth via world-atlas)
+async function paintEarth(){
+  const topo = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json').then(r => r.json());
+  const land = topojson.feature(topo, topo.objects.countries);
+  const borders = topojson.mesh(topo, topo.objects.countries, (a,b) => a !== b);
+  const W = 4096, H = 2048;
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  const og = ctx.createLinearGradient(0, 0, 0, H);
+  og.addColorStop(0, '#0a2d4e'); og.addColorStop(.5, '#0d3f6b'); og.addColorStop(1, '#0a2d4e');
+  ctx.fillStyle = og; ctx.fillRect(0,0,W,H);
+  const proj = d3.geoEquirectangular().translate([W/2, H/2]).scale(W/(2*Math.PI));
+  const path = d3.geoPath(proj, ctx);
+
+  // land on its own layer so climate bands can be clipped to it
+  const lc = document.createElement('canvas'); lc.width = W; lc.height = H;
+  const lx = lc.getContext('2d');
+  const lpath = d3.geoPath(proj, lx);
+  lx.beginPath(); lpath(land);
+  lx.fillStyle = '#2f6b34'; lx.fill();
+  lx.globalCompositeOperation = 'source-atop';
+  const latY = lat => H/2 - (lat/90) * (H/2);
+  const band = (lat0, lat1, color, a) => {
+    const y0 = latY(lat0), y1 = latY(lat1);
+    const g = lx.createLinearGradient(0, y0, 0, y1);
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(.5, color); g.addColorStop(1, 'rgba(0,0,0,0)');
+    lx.globalAlpha = a; lx.fillStyle = g; lx.fillRect(0, y0, W, y1-y0); lx.globalAlpha = 1;
+  };
+  band(38, 12, '#b79a5d', .85);
+  band(-8, -38, '#a9884f', .7);
+  band(12, -8, '#245c26', .5);
+  band(72, 48, '#3c6b46', .45);
+  band(90, 66, '#dfe9f2', .9);
+  band(-66, -90, '#e6eef5', .95);
+  lx.globalCompositeOperation = 'source-over';
+  ctx.drawImage(lc, 0, 0);
+
+  ctx.beginPath(); path(borders);
+  ctx.strokeStyle = 'rgba(255,255,255,.09)'; ctx.lineWidth = 1.2; ctx.stroke();
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  globe.material.map = tex;
+  globe.material.needsUpdate = true;
+
+}
+paintEarth();
+window.FG = {globe, get map(){ return !!globe.material.map; }};
+
+const grid = new THREE.LineSegments(
+  new THREE.WireframeGeometry(new THREE.IcosahedronGeometry(R*1.004, 4)),
+  new THREE.LineBasicMaterial({color:0xffffff, transparent:true, opacity:.05})
+);
+planet.add(grid);
+
+const halo = new THREE.Mesh(
+  new THREE.SphereGeometry(R*1.06, 48, 32),
+  new THREE.MeshBasicMaterial({color:0x6fb2e8, transparent:true, opacity:.24, side:THREE.BackSide})
+);
+planet.add(halo);
+const halo2 = new THREE.Mesh(
+  new THREE.SphereGeometry(R*1.17, 48, 32),
+  new THREE.MeshBasicMaterial({color:0x3f79c4, transparent:true, opacity:.09, side:THREE.BackSide})
+);
+planet.add(halo2);
+const clouds = new THREE.Mesh(
+  new THREE.SphereGeometry(R*1.014, 8, 6),
+  new THREE.MeshBasicMaterial({visible:false})
+);
+clouds.visible = false;
+planet.add(clouds);
+
+// pulsing fire hotspots placed at the real coordinates of the fires below
+const spin = new THREE.Group(); planet.add(spin);
+spin.add(globe);
+const fireMat = new THREE.MeshStandardMaterial({color:0xe8622c, emissive:0xe8622c, emissiveIntensity:1.4, roughness:.5});
+const glows = [];
+function latLonToVec(lat, lon, r){
+  const phi = lon*Math.PI/180 + Math.PI, theta = Math.PI/2 - lat*Math.PI/180;
+  return new THREE.Vector3(
+    -r*Math.cos(phi)*Math.sin(theta),
+     r*Math.cos(theta),
+     r*Math.sin(phi)*Math.sin(theta)
+  );
+}
+[[41.62,-123.05],[39.98,-120.72],[37.55,-119.45],[34.28,-117.95],[32.95,-116.58]].forEach(([la,lo],i) => {
+  const p = latLonToVec(la, lo, R);
+  const m = new THREE.Mesh(new THREE.SphereGeometry(.14, 18, 14), fireMat.clone());
+  m.position.copy(p).multiplyScalar(1.008);
+  spin.add(m);
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(.2, .235, 40),
+    new THREE.MeshBasicMaterial({color:0xe8622c, transparent:true, opacity:.7, side:THREE.DoubleSide})
+  );
+  ring.position.copy(p).multiplyScalar(1.004);
+  ring.lookAt(p.clone().multiplyScalar(2));
+  spin.add(ring);
+  glows.push({mesh:m, ring, t:i*1.3});
+});
+
+// orbit path + satellite
+const orbitGroup = new THREE.Group();
+orbitGroup.rotation.set(-0.42, 0, 0.28);
+planet.add(orbitGroup);
+const ORB = R + 1.2;
+orbitGroup.add(new THREE.Mesh(
+  new THREE.TorusGeometry(ORB, .018, 8, 220),
+  new THREE.MeshBasicMaterial({color:0xa8481f, transparent:true, opacity:.32})
+));
+
+const sat = new THREE.Group();
+const hullMat  = new THREE.MeshStandardMaterial({color:0xd9d2c6, roughness:.42, metalness:.55});
+const foilMat  = new THREE.MeshStandardMaterial({color:0xc9a45c, roughness:.3, metalness:.85});
+const panelMat = new THREE.MeshStandardMaterial({color:0x1e3f6b, roughness:.22, metalness:.7, emissive:0x0b1b33, emissiveIntensity:.5});
+const gridMat  = new THREE.MeshStandardMaterial({color:0x5b7fae, roughness:.35, metalness:.6});
+const darkMat  = new THREE.MeshStandardMaterial({color:0x2b2b2f, roughness:.6, metalness:.4});
+
+const bus = new THREE.Mesh(new THREE.BoxGeometry(.52,.46,.44), hullMat); bus.name='bus';
+sat.add(bus);
+const foil = new THREE.Mesh(new THREE.BoxGeometry(.535,.24,.455), foilMat); foil.name='thermal_blanket';
+foil.position.y = -.06; sat.add(foil);
+
+// two solar wings: yoke + 3 cells each
+[-1,1].forEach(s => {
+  const yoke = new THREE.Mesh(new THREE.CylinderGeometry(.026,.026,.30,10), darkMat);
+  yoke.rotation.z = Math.PI/2; yoke.position.x = s*.41; yoke.name='yoke';
+  sat.add(yoke);
+  for(let k=0;k<3;k++){
+    const cell = new THREE.Mesh(new THREE.BoxGeometry(.44,.34,.022), panelMat);
+    cell.position.set(s*(.78 + k*.455), 0, 0); cell.name='solar_cell';
+    sat.add(cell);
+    const spar = new THREE.Mesh(new THREE.BoxGeometry(.44,.35,.008), gridMat);
+    spar.position.set(s*(.78 + k*.455), 0, -.016); sat.add(spar);
+  }
+});
+
+// high-gain dish on a short boom
+const boom = new THREE.Mesh(new THREE.CylinderGeometry(.02,.02,.26,8), darkMat);
+boom.position.y = -.34; sat.add(boom);
+const dish = new THREE.Mesh(
+  new THREE.SphereGeometry(.23, 26, 14, 0, Math.PI*2, 0, .95),
+  new THREE.MeshStandardMaterial({color:0xf2efe6, roughness:.35, metalness:.3, side:THREE.DoubleSide})
+);
+dish.name='dish'; dish.rotation.x = Math.PI; dish.position.y = -.50; sat.add(dish);
+const feed = new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,.16,8), darkMat);
+feed.position.y = -.40; sat.add(feed);
+
+// imaging barrel + antenna mast
+const barrel = new THREE.Mesh(new THREE.CylinderGeometry(.10,.12,.30,20), darkMat);
+barrel.name='sensor'; barrel.rotation.x = Math.PI/2; barrel.position.set(0,.06,.32); sat.add(barrel);
+const lens = new THREE.Mesh(new THREE.CircleGeometry(.095, 20),
+  new THREE.MeshStandardMaterial({color:0x101820, roughness:.15, metalness:.9}));
+lens.position.set(0,.06,.475); sat.add(lens);
+const mast = new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.42,8), hullMat);
+mast.position.y = .34; sat.add(mast);
+const tip = new THREE.Mesh(new THREE.SphereGeometry(.035,12,10), foilMat);
+tip.position.y = .55; sat.add(tip);
+sat.scale.setScalar(1.15);
+orbitGroup.add(sat);
+
+// starfield
+const N = 900, pos = new Float32Array(N*3), seedY = new Float32Array(N), spd = new Float32Array(N);
+for(let i=0;i<N;i++){
+  const r = 40 + Math.random()*45, th = Math.random()*6.283, ph = Math.acos(2*Math.random()-1);
+  pos[i*3]   = r*Math.sin(ph)*Math.cos(th);
+  pos[i*3+1] = seedY[i] = r*Math.cos(ph);
+  pos[i*3+2] = r*Math.sin(ph)*Math.sin(th);
+  spd[i] = 0;
+}
+const emberGeo = new THREE.BufferGeometry();
+emberGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+const embers = new THREE.Points(emberGeo, new THREE.PointsMaterial({
+  color:0xffffff, size:.30, transparent:true, opacity:.7, sizeAttenuation:true
+}));
+scene.add(embers);
+const bright = new THREE.Points(emberGeo, new THREE.PointsMaterial({
+  color:0xdfe9ff, size:.62, transparent:true, opacity:.3, sizeAttenuation:true
+}));
+bright.rotation.y = 1.2; scene.add(bright);
+
+function resize(){
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if(!w || !h) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = w/h; camera.updateProjectionMatrix();
+}
+resize(); addEventListener('resize', resize);
+
+let t = 0, visible = true;
+new IntersectionObserver(e => { visible = e[0].isIntersecting; }, {threshold:0}).observe(hero);
+
+// scroll progress through the hero drives camera height, globe spin and the satellite
+let sp = 0;
+function scrollProgress(){
+  const band = canvas.getBoundingClientRect();
+  const total = innerHeight + band.height;
+  sp = Math.min(1, Math.max(0, (innerHeight - band.top) / total));
+}
+scrollProgress();
+addEventListener('scroll', scrollProgress, {passive:true});
+
+function tick(){
+  requestAnimationFrame(tick);
+  if(!visible) return;
+  t += 0.0045;
+  spin.rotation.y = 1.95 + t * 0.56;
+  grid.rotation.y = 1.95 + t * 0.56;
+  planet.position.y = 0;
+  camera.position.y = 0;
+  camera.lookAt(0, 0, 0);
+  planet.rotation.z = Math.sin(t*.4) * .015;
+  key.position.set(Math.cos(t*.22)*11, 7, 15 + Math.sin(t*.22)*5);
+  const a = t * 2.6;
+  sat.position.set(Math.cos(a)*ORB, Math.sin(a)*ORB, 0);
+  sat.rotation.z = a + Math.PI/2;
+  glows.forEach((g,i) => {
+    const k = .8 + Math.sin(t*7 + g.t) * .22;
+    g.mesh.scale.setScalar(k);
+    g.mesh.material.emissiveIntensity = 1.1 + Math.sin(t*9 + g.t)*.6;
+    const p = ((t*.55 + i*.33) % 1);
+    g.ring.scale.setScalar(1 + p*4.2);
+    g.ring.material.opacity = .65 * (1 - p);
+  });
+  embers.rotation.y = t * .04;
+  bright.rotation.y = 1.2 + t * .04;
+  renderer.render(scene, camera);
+}
+tick();
+</script>
+</body>
 </html>

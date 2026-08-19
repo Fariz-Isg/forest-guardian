@@ -1,0 +1,71 @@
+{
+  "asOf": "2026-08-18",
+  "events": [
+    {
+      "n": "Sequoia-Kings",
+      "r": "Southern Sierra",
+      "lat": 37.276,
+      "lng": -116.128,
+      "firstDate": "2026-07-28",
+      "lastDate": "2026-08-10",
+      "detections": 820,
+      "totalFrp": 35612.3,
+      "active": false
+    },
+    {
+      "n": "Tahoe Basin",
+      "r": "El Dorado County",
+      "lat": 39.644,
+      "lng": -117.478,
+      "firstDate": "2026-07-28",
+      "lastDate": "2026-08-18",
+      "detections": 1094,
+      "totalFrp": 33426.6,
+      "active": true
+    },
+    {
+      "n": "Stanislaus",
+      "r": "Central Sierra",
+      "lat": 38.098,
+      "lng": -120.71,
+      "firstDate": "2026-08-04",
+      "lastDate": "2026-08-16",
+      "detections": 179,
+      "totalFrp": 5668.1,
+      "active": false
+    },
+    {
+      "n": "Klamath",
+      "r": "Siskiyou County",
+      "lat": 41.13,
+      "lng": -123.655,
+      "firstDate": "2026-08-08",
+      "lastDate": "2026-08-18",
+      "detections": 404,
+      "totalFrp": 3284.7,
+      "active": true
+    },
+    {
+      "n": "Los Padres North",
+      "r": "Monterey County",
+      "lat": 36.227,
+      "lng": -121.723,
+      "firstDate": "2026-07-31",
+      "lastDate": "2026-08-18",
+      "detections": 279,
+      "totalFrp": 2916.3,
+      "active": true
+    },
+    {
+      "n": "San Diego Backcountry",
+      "r": "San Diego County",
+      "lat": 33.467,
+      "lng": -116.831,
+      "firstDate": "2026-07-31",
+      "lastDate": "2026-08-17",
+      "detections": 15,
+      "totalFrp": 595.4,
+      "active": true
+    }
+  ]
+}
