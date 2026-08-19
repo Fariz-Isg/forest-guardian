@@ -19,7 +19,7 @@ COLS, ROWS = 12, 12
 START_DATE = date(2025, 4, 28)
 END_DATE = date(2026, 8, 18)
 
-with open(os.path.join(HERE, "..", "app", "src", "data", "californiaBoundary.json")) as f:
+with open(os.path.join(HERE, "californiaBoundary.json")) as f:
     boundary = json.load(f)
 POLYGONS = boundary["geometry"]["coordinates"]
 

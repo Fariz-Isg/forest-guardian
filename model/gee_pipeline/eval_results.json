@@ -1,0 +1,33 @@
+{
+  "features": [
+    "tmmx",
+    "tmmn",
+    "vs",
+    "rmin",
+    "pr",
+    "pr_90d",
+    "elevation",
+    "slope",
+    "aspect",
+    "forest_fraction",
+    "prior_fire_count"
+  ],
+  "n_rows": 536426,
+  "positive_rate": 0.00046045493693445136,
+  "results": {
+    "random_forest": {
+      "precision": 0.017615971814445096,
+      "recall": 0.6122448979591837,
+      "f1": 0.03424657534246575,
+      "auc_roc": 0.930019584696342,
+      "auc_pr": 0.11789666014212499
+    },
+    "xgboost": {
+      "precision": 0.25,
+      "recall": 0.2857142857142857,
+      "f1": 0.26666666666666666,
+      "auc_roc": 0.9558679202445547,
+      "auc_pr": 0.2523194715151233
+    }
+  }
+}
