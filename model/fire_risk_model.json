@@ -1,0 +1,38 @@
+{
+  "features": [
+    "temp_max",
+    "temp_min",
+    "wind_max",
+    "precip_sum",
+    "humidity_mean"
+  ],
+  "mean": [
+    24.7008716875872,
+    11.968257892734993,
+    15.800912894636598,
+    1.3538132369722213,
+    50.34043362495245
+  ],
+  "std": [
+    9.378756296680159,
+    7.594952406833029,
+    6.561627884556972,
+    6.0173304593776775,
+    23.604040888277954
+  ],
+  "coef": [
+    1.1319992265459264,
+    -0.6697774417365636,
+    0.08100650050320234,
+    -0.5565911938872948,
+    0.6205006084785502
+  ],
+  "intercept": -0.1180990939016159,
+  "trained_on": {
+    "rows": 31548,
+    "positive_rows": 6885,
+    "grid": "12x12 cells over the California bbox, land-masked",
+    "test_auc": 0.66
+  },
+  "notes": "Logistic regression trained on (grid cell, day) pairs: was a VIIRS fire detected in that specific cell that day, given that cell's own weather (temp, wind, precipitation, humidity) that day. This gives genuine spatial contrast, unlike a whole-region daily aggregate. At inference time the same model is evaluated against each map grid point's live forecast weather."
+}

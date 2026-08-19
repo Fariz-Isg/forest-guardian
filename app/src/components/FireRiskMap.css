@@ -1,0 +1,109 @@
+.fg-map-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.fg-map {
+  position: absolute;
+  inset: 0;
+}
+
+/* Slightly warm the neutral basemap so it sits inside the brand palette
+   rather than reading as a cold, generic map product. */
+.fg-map .maplibregl-canvas {
+  filter: sepia(0.12) saturate(0.92) brightness(1.02);
+}
+
+.fg-card {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--border);
+  padding: 14px 18px;
+}
+
+.fg-legend {
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+  z-index: 5;
+}
+
+.fg-legend-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--warm-charcoal);
+  margin-bottom: 10px;
+}
+
+.fg-legend-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.fg-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--warm-gray);
+}
+
+.fg-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 5px;
+  display: inline-block;
+}
+
+.fg-swatch--dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--burnt-umber);
+  border: 1.5px solid white;
+  box-shadow: 0 0 0 1px var(--burnt-umber);
+}
+
+.fg-legend-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 10px 0;
+}
+
+.fg-status {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  z-index: 5;
+  font-size: 13px;
+  color: var(--warm-gray);
+}
+
+.fg-status strong {
+  color: var(--ember-orange);
+  font-size: 15px;
+}
+
+.fg-status-time {
+  color: var(--warm-gray);
+}
+
+.fg-status-error {
+  color: var(--burnt-umber);
+}
+
+.fg-popup {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--warm-charcoal);
+  line-height: 1.5;
+}
+
+.maplibregl-popup-content {
+  border-radius: var(--radius-sm) !important;
+  box-shadow: var(--shadow-soft) !important;
+  padding: 10px 14px !important;
+}
