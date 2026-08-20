@@ -5,3 +5,4 @@ dist/
 
 # Large regeneratable data extracts (rerun model/gee_pipeline/02_export_monthly_features.py)
 model/gee_pipeline/monthly_features.csv
+video-project/
